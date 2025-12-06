@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6">
+        <div class="card border-danger shadow">
+            <div class="card-header bg-danger text-white">
+                ⚠️ Potwierdzenie usunięcia
+            </div>
+            <div class="card-body text-center">
+                <h5 class="card-title">Czy na pewno chcesz usunąć kategorię "{{ category.name }}"?</h5>
+                <p class="card-text text-muted">Tej operacji nie można cofnąć.</p>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger btn-lg">Tak, usuń</button>
+                    <a href="{% url 'category_list' %}" class="btn btn-secondary btn-lg">Anuluj</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
