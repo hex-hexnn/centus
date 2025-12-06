@@ -1,0 +1,13 @@
+# --- Core Framework ---
+Django==5.0.6
+asgiref==3.8.1
+sqlparse==0.5.0
+tzdata==2024.1
+
+# --- Frontend & UI (Bootstrap Helpers) ---
+django-crispy-forms==2.1
+crispy-bootstrap5==2024.2
+
+# --- Konfiguracja i Bezpieczeństwo ---
+# Do ukrywania kluczy (SECRET_KEY) w pliku .env zamiast w kodzie
+python-dotenv==1.0.1

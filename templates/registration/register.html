@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Rejestracja{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6"> <div class="card shadow">
+            <div class="card-header bg-success text-white text-center">
+                <h4>Utwórz konto</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form|crispy }}
+                    
+                    <div class="d-grid gap-2 mt-3">
+                        <button type="submit" class="btn btn-success">Zarejestruj się</button>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer text-center text-muted">
+                <small>Masz już konto? <a href="{% url 'login' %}">Zaloguj się</a></small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
