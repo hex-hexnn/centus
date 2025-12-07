@@ -40,6 +40,7 @@
             <th>Kategoria</th>
             <th>Opis</th>
             <th>Kwota</th>
+            <th>Akcje</th> </tr>
         </tr>
     </thead>
     <tbody>
@@ -54,6 +55,16 @@
             <td>{{ transaction.description }}</td>
             <td class="{% if transaction.category.type == 'INCOME' %}text-success{% else %}text-danger{% endif %}">
                 {{ transaction.amount }} PLN
+            </td>
+            <td>
+                <div class="btn-group" role="group">
+                    <a href="{% url 'transaction_update' transaction.id %}" class="btn btn-sm btn-outline-primary">
+                        ✏️ Edytuj
+                    </a>
+                    <a href="{% url 'transaction_delete' transaction.id %}" class="btn btn-sm btn-outline-danger">
+                        🗑️ Usuń
+                    </a>
+                </div>
             </td>
         </tr>
         {% empty %}

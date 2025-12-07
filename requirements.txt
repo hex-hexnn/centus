@@ -11,3 +11,4 @@ crispy-bootstrap5==2024.2
 # --- Konfiguracja i Bezpieczeństwo ---
 # Do ukrywania kluczy (SECRET_KEY) w pliku .env zamiast w kodzie
 python-dotenv==1.0.1
+matplotlib

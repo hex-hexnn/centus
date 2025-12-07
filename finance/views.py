@@ -107,3 +107,37 @@ def category_delete(request, pk):
 
     # Jeśli wszedł tylko na stronę (GET), pytamy czy na pewno
     return render(request, 'finance/category_confirm_delete.html', {'category': category})
+
+
+@login_required
+def transaction_update(request, pk):
+    # KROK 1: Pobieramy transakcję, ale TYLKO jeśli należy do użytkownika.
+    # Jeśli użytkownik spróbuje edytować cudzą transakcję -> dostanie błąd 404.
+    transaction = get_object_or_404(Transaction, pk=pk, user=request.user)
+
+    if request.method == 'POST':
+        # KROK 2: Wypełniamy formularz danymi z POST, nadpisując obiekt z bazy (instance)
+        form = TransactionForm(request.POST, instance=transaction)
+        if form.is_valid():
+            form.save()
+            return redirect('transaction_list')  # Powrót do pulpitu
+    else:
+        # KROK 3: Jeśli to GET (wejście na stronę), wyświetlamy formularz wypełniony danymi
+        form = TransactionForm(instance=transaction)
+
+    # Reużywamy szablonu transaction_form.html! Nie musisz tworzyć nowego.
+    return render(request, 'finance/transaction_form.html', {'form': form})
+
+
+@login_required
+def transaction_delete(request, pk):
+    # KROK 1: Znów zabezpieczenie - pobieramy tylko własną transakcję
+    transaction = get_object_or_404(Transaction, pk=pk, user=request.user)
+
+    if request.method == 'POST':
+        # KROK 2: Fizyczne usunięcie z bazy
+        transaction.delete()
+        return redirect('transaction_list')
+
+    # KROK 3: Wyświetlenie strony z pytaniem "Czy na pewno?"
+    return render(request, 'finance/transaction_confirm_delete.html', {'transaction': transaction})
