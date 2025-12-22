@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block title %}Analizy i Statystyki{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Analiza Finansowa</h2>
+
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                Struktura Wydatków
+            </div>
+            <div class="card-body text-center">
+                {% if pie_chart %}
+                    <img src="data:image/png;base64,{{ pie_chart }}" alt="Wykres kołowy" class="img-fluid">
+                {% else %}
+                    <p class="text-muted mt-3">Brak danych o wydatkach do wyświetlenia.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header bg-dark text-white">
+                Przychody vs Wydatki (Miesięcznie)
+            </div>
+            <div class="card-body text-center">
+                {% if bar_chart %}
+                    <img src="data:image/png;base64,{{ bar_chart }}" alt="Wykres słupkowy" class="img-fluid">
+                {% else %}
+                    <p class="text-muted mt-3">Brak wystarczających danych do wyświetlenia historii.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="text-center mt-3">
+    <a href="{% url 'transaction_list' %}" class="btn btn-secondary">Wróć do Pulpitu</a>
+</div>
+{% endblock %}

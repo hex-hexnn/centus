@@ -5,6 +5,10 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import login
 from finance.models import Transaction, Category
 from finance.forms import TransactionForm, CategoryForm
+import matplotlib.pyplot as plt
+import io
+import urllib, base64
+from django.db.models.functions import TruncMonth
 
 
 @login_required  # Wymaga zalogowania - o tym niżej w sekcji uruchamiania
@@ -141,3 +145,78 @@ def transaction_delete(request, pk):
 
     # KROK 3: Wyświetlenie strony z pytaniem "Czy na pewno?"
     return render(request, 'finance/transaction_confirm_delete.html', {'transaction': transaction})
+@login_required
+def analysis(request):
+    # Ustawienie backendu matplotlib na 'Agg' (nieinteraktywny), aby uniknąć błędów serwera
+    plt.switch_backend('AGG')
+
+    transactions = Transaction.objects.filter(user=request.user)
+
+    # --- WYKRES 1: Kołowy (Wydatki według kategorii) ---
+    expenses = transactions.filter(category__type='EXPENSE').values('category__name').annotate(sum=Sum('amount'))
+    
+    pie_chart = None
+    if expenses:
+        labels = [item['category__name'] for item in expenses]
+        sizes = [item['sum'] for item in expenses]
+        
+        fig, ax = plt.subplots(figsize=(6, 6))
+        ax.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90)
+        ax.axis('equal')  # Zapewnia, że wykres jest kołem
+        ax.set_title('Procentowy udział wydatków')
+
+        # Zapisywanie wykresu do bufora
+        buf = io.BytesIO()
+        fig.savefig(buf, format='png')
+        buf.seek(0)
+        string = base64.b64encode(buf.read())
+        uri = urllib.parse.quote(string)
+        pie_chart = uri
+        plt.close(fig) # Zamknij figurę, by zwolnić pamięć
+
+    # --- WYKRES 2: Słupkowy (Miesiąc po miesiącu: Przychody vs Wydatki) ---
+    # Grupujemy transakcje po miesiącach
+    monthly_data = transactions.annotate(month=TruncMonth('date')).values('month', 'category__type').annotate(total=Sum('amount')).order_by('month')
+
+    bar_chart = None
+    if monthly_data:
+        # Przetwarzanie danych do formatu łatwego dla matplotlib
+        data_dict = {}
+        for item in monthly_data:
+            month_str = item['month'].strftime("%Y-%m")
+            if month_str not in data_dict:
+                data_dict[month_str] = {'INCOME': 0, 'EXPENSE': 0}
+            data_dict[month_str][item['category__type']] = float(item['total']) # Konwersja Decimal na float dla wykresu
+
+        months = list(data_dict.keys())
+        incomes = [data_dict[m]['INCOME'] for m in months]
+        expenses = [data_dict[m]['EXPENSE'] for m in months]
+
+        x = range(len(months))
+        width = 0.35
+
+        fig, ax = plt.subplots(figsize=(10, 6))
+        rects1 = ax.bar([i - width/2 for i in x], incomes, width, label='Przychody', color='green')
+        rects2 = ax.bar([i + width/2 for i in x], expenses, width, label='Wydatki', color='red')
+
+        ax.set_ylabel('Kwota (PLN)')
+        ax.set_title('Bilans miesięczny')
+        ax.set_xticks(x)
+        ax.set_xticklabels(months, rotation=45)
+        ax.legend()
+
+        fig.tight_layout()
+
+        # Zapisywanie wykresu do bufora
+        buf = io.BytesIO()
+        fig.savefig(buf, format='png')
+        buf.seek(0)
+        string = base64.b64encode(buf.read())
+        uri = urllib.parse.quote(string)
+        bar_chart = uri
+        plt.close(fig)
+
+    return render(request, 'finance/analysis.html', {
+        'pie_chart': pie_chart,
+        'bar_chart': bar_chart
+    })
