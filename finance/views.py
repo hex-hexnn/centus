@@ -11,21 +11,57 @@ import urllib, base64
 from django.db.models.functions import TruncMonth
 
 
-@login_required  # Wymaga zalogowania - o tym niżej w sekcji uruchamiania
+@login_required
 def transaction_list(request):
     # Pobieramy transakcje TYLKO zalogowanego użytkownika
     transactions = Transaction.objects.filter(user=request.user)
 
-    # Mała analiza na szybko - suma wpływów i wydatków
+    # Obliczenia sum
     total_income = transactions.filter(category__type='INCOME').aggregate(Sum('amount'))['amount__sum'] or 0
     total_expense = transactions.filter(category__type='EXPENSE').aggregate(Sum('amount'))['amount__sum'] or 0
     balance = total_income - total_expense
+
+    # --- NOWOŚĆ: Generowanie ogólnego wykresu (Pulpit) ---
+    dashboard_chart = None
+    if total_income > 0 or total_expense > 0:
+        plt.switch_backend('AGG') # Ustawiamy backend na nieinteraktywny
+        
+        # Tworzymy figurę o niestandardowym rozmiarze (szeroka i niska)
+        fig, ax = plt.subplots(figsize=(8, 3)) 
+        
+        categories = ['Przychody', 'Wydatki']
+        values = [total_income, total_expense]
+        colors = ['#198754', '#dc3545'] # Kolory Bootstrap: Success (zielony) i Danger (czerwony)
+        
+        # Rysujemy słupki
+        bars = ax.bar(categories, values, color=colors, width=0.4)
+        
+        # Dodajemy wartości nad słupkami dla czytelności
+        ax.bar_label(bars, fmt='%.2f zł', padding=3)
+        
+        ax.set_title('Ogólny Bilans Finansowy')
+        
+        # Usuwamy ramki wykresu dla czystszego wyglądu (opcjonalne)
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        
+        fig.tight_layout()
+
+        # Zapis do bufora
+        buf = io.BytesIO()
+        fig.savefig(buf, format='png')
+        buf.seek(0)
+        string = base64.b64encode(buf.read())
+        dashboard_chart = urllib.parse.quote(string)
+        plt.close(fig) # Zamykamy, aby zwolnić pamięć
+    # -----------------------------------------------------
 
     return render(request, 'finance/transaction_list.html', {
         'transactions': transactions,
         'total_income': total_income,
         'total_expense': total_expense,
-        'balance': balance
+        'balance': balance,
+        'dashboard_chart': dashboard_chart, # Przekazujemy wykres do szablonu
     })
 
 
