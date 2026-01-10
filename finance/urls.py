@@ -12,4 +12,5 @@ urlpatterns = [
     path('categories/delete/<int:pk>/', views.category_delete, name='category_delete'),
     path('edit/<int:pk>/', views.transaction_update, name='transaction_update'),
     path('delete/<int:pk>/', views.transaction_delete, name='transaction_delete'),
+    path('calendar/', views.calendar_view, name='calendar')
 ]
