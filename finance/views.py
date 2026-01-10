@@ -9,6 +9,10 @@ import matplotlib.pyplot as plt
 import io
 import urllib, base64
 from django.db.models.functions import TruncMonth
+import calendar
+from datetime import date, datetime
+from finance.models import Subscription
+from finance.forms import SubscriptionForm
 
 
 @login_required
@@ -256,3 +260,75 @@ def analysis(request):
         'pie_chart': pie_chart,
         'bar_chart': bar_chart
     })
+
+@login_required
+def calendar_view(request):
+    # 1. Ustalamy jaki rok i miesiąc wyświetlić (domyślnie obecny)
+    today = date.today()
+    year = int(request.GET.get('year', today.year))
+    month = int(request.GET.get('month', today.month))
+
+    # 2. Pobieramy transakcje użytkownika z tego konkretnego miesiąca i roku
+    transactions = Transaction.objects.filter(
+        user=request.user,
+        date__year=year,
+        date__month=month
+    )
+
+    # 3. Pobieramy wszystkie subskrypcje użytkownika
+    subscriptions = Subscription.objects.filter(user=request.user)
+
+    # 4. Tworzymy strukturę danych: Słownik, gdzie kluczem jest DZIEŃ, a wartością lista wydarzeń
+    # np. { 10: ['Netflix 50zł', 'Zakupy 120zł'], 15: ['Wypłata'] }
+    days_data = {}
+
+    # Dodajemy jednorazowe transakcje do kalendarza
+    for trans in transactions:
+        day = trans.date.day
+        if day not in days_data:
+            days_data[day] = []
+        days_data[day].append({
+            'type': 'trans',
+            'name': trans.category.name if trans.category else "Inne",
+            'amount': trans.amount,
+            'is_income': trans.category.type == 'INCOME' if trans.category else False
+        })
+
+    # Dodajemy subskrypcje (powtarzają się co miesiąc)
+    for sub in subscriptions:
+        # Sprawdzamy, czy dzień płatności istnieje w tym miesiącu (np. luty nie ma 30-go)
+        max_days_in_month = calendar.monthrange(year, month)[1]
+        if sub.payment_day <= max_days_in_month:
+            if sub.payment_day not in days_data:
+                days_data[sub.payment_day] = []
+            days_data[sub.payment_day].append({
+                'type': 'sub',
+                'name': sub.name,
+                'amount': sub.amount,
+                'is_income': False # Zakładamy, że subskrypcja to wydatek
+            })
+
+    # 5. Generujemy macierz kalendarza (listę tygodni)
+    cal = calendar.monthcalendar(year, month)
+
+    # Obsługa formularza dodawania subskrypcji (prosty sposób na tej samej stronie)
+    if request.method == 'POST':
+        form = SubscriptionForm(request.POST)
+        if form.is_valid():
+            sub = form.save(commit=False)
+            sub.user = request.user
+            sub.save()
+            return redirect('calendar') # Przeładuj stronę
+    else:
+        form = SubscriptionForm()
+
+    context = {
+        'calendar_weeks': cal, # Lista list dni np. [[0,0,1,2...], [3,4,5...]]
+        'days_data': days_data, # Nasze dane o wydatkach
+        'current_year': year,
+        'current_month': month,
+        'month_name': calendar.month_name[month],
+        'form': form, # Formularz do subskrypcji
+    }
+
+    return render(request, 'finance/calendar.html', context)
