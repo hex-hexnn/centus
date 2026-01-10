@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Kalendarz Finansowy{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2>🗓️ Kalendarz: {{ month_name }} {{ current_year }}</h2>
+        <div class="btn-group">
+            <a href="?month={{ current_month|add:'-1' }}" class="btn btn-outline-primary">&laquo; Poprzedni</a>
+            <a href="?month={{ current_month|add:'1' }}" class="btn btn-outline-primary">Następny &raquo;</a>
+        </div>
+    </div>
+    <div class="col-md-4 text-end">
+        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#subModal">
+            + Dodaj Subskrypcję
+        </button>
+    </div>
+</div>
+
+<div class="card shadow">
+    <div class="card-body p-0">
+        <table class="table table-bordered text-center mb-0" style="table-layout: fixed;">
+            <thead class="bg-light">
+                <tr>
+                    <th>Pon</th><th>Wt</th><th>Śr</th><th>Czw</th><th>Pt</th><th>Sob</th><th>Ndz</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for week in calendar_weeks %}
+                <tr>
+                    {% for day in week %}
+                        <td class="align-top" style="height: 120px; width: 14%;">
+                            {% if day != 0 %}
+                                <div class="fw-bold mb-2">{{ day }}</div>
+
+                                {% for key, events in days_data.items %}
+                                    {% if key == day %}
+                                        {% for event in events %}
+                                            <div class="badge w-100 mb-1 text-truncate
+                                                {% if event.type == 'sub' %}bg-info text-dark
+                                                {% elif event.is_income %}bg-success
+                                                {% else %}bg-danger{% endif %}"
+                                                title="{{ event.name }}: {{ event.amount }} zł">
+
+                                                {% if event.type == 'sub' %}🔄{% endif %}
+                                                {{ event.amount }} zł
+                                            </div>
+                                        {% endfor %}
+                                    {% endif %}
+                                {% endfor %}
+
+                            {% else %}
+                                <span class="text-muted bg-light d-block h-100"></span>
+                            {% endif %}
+                        </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="subModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Dodaj stałą subskrypcję</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form|crispy }}
+                    <button type="submit" class="btn btn-primary mt-3">Zapisz</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
