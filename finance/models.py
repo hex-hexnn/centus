@@ -48,3 +48,14 @@ class BudgetLimit(models.Model):
     def __str__(self):
         return f"Limit {self.category.name}: {self.limit_amount}"
 
+
+
+class Subscription(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    name = models.CharField(max_length=100, verbose_name="Nazwa subskrypcji")
+    amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Kwota")
+    # Dzień miesiąca, w którym pobierana jest opłata (np. 10-go każdego miesiąca)
+    payment_day = models.PositiveIntegerField(verbose_name="Dzień płatności (1-31)")
+
+    def __str__(self):
+        return f"{self.name} ({self.amount} zł)"

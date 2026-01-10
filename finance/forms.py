@@ -1,5 +1,5 @@
 from django import forms
-from finance.models import Transaction, Category# <--- Dodałem kropkę przed models
+from finance.models import Transaction, Category, Subscription # <--- Dodałem kropkę przed models
 
 
 class TransactionForm(forms.ModelForm):
@@ -20,3 +20,10 @@ class CategoryForm(forms.ModelForm):
             'type': 'Rodzaj (Wpływ/Wydatek)'
         }
 
+class SubscriptionForm(forms.ModelForm):
+    class Meta:
+        model = Subscription
+        fields = ['name', 'amount', 'payment_day']
+        widgets = {
+            'payment_day': forms.NumberInput(attrs={'min': 1, 'max': 31}),
+        }
