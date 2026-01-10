@@ -47,3 +47,24 @@ class BudgetLimit(models.Model):
 
     def __str__(self):
         return f"Limit {self.category.name}: {self.limit_amount}"
+
+    class Subscription(models.Model):
+        # Wybór jak często płacimy
+        FREQUENCY_CHOICES = [
+            ('MONTHLY', 'Co miesiąc'),
+            ('YEARLY', 'Co rok'),
+        ]
+
+        user = models.ForeignKey(User, on_delete=models.CASCADE)
+        category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True)
+        name = models.CharField(max_length=100, verbose_name="Nazwa subskrypcji")
+        amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Kwota")
+
+        # Następna płatność
+        next_payment_date = models.DateField(verbose_name="Data następnej płatności")
+        frequency = models.CharField(max_length=10, choices=FREQUENCY_CHOICES, default='MONTHLY',
+                                     verbose_name="Częstotliwość")
+        is_active = models.BooleanField(default=True, verbose_name="Aktywna")
+
+        def __str__(self):
+            return f"{self.name} ({self.amount} zł)"
