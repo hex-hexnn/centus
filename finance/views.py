@@ -13,6 +13,7 @@ import calendar
 from datetime import date, datetime
 from finance.models import Subscription
 from finance.forms import SubscriptionForm
+from finance.recommendations import get_savings_recommendations
 
 
 @login_required
@@ -332,3 +333,26 @@ def calendar_view(request):
     }
 
     return render(request, 'finance/calendar.html', context)
+
+from datetime import date
+from finance.recommendations import get_savings_recommendations
+
+@login_required
+def recommendations_view(request):
+    month_str = request.GET.get("month")
+    selected_month = None
+
+    if month_str:
+        try:
+            selected_month = date.fromisoformat(month_str)
+        except ValueError:
+            selected_month = None
+
+    recommendations = get_savings_recommendations(request.user, for_month=selected_month)
+
+    context = {
+        "recommendations": recommendations,
+        "selected_month": selected_month,
+    }
+    return render(request, "finance/recommendations.html", context)
+
