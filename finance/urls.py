@@ -14,4 +14,8 @@ urlpatterns = [
     path('delete/<int:pk>/', views.transaction_delete, name='transaction_delete'),
     path('calendar/', views.calendar_view, name='calendar'),
     path('recommendations/', views.recommendations_view, name='recommendations'),
+    path("limits/", views.budget_limits_list, name="budget_limits"),
+    path("limits/add/", views.budget_limit_create, name="budget_limit_create"),
+    path("limits/edit/<int:pk>/", views.budget_limit_update, name="budget_limit_update"),
+    path("limits/delete/<int:pk>/", views.budget_limit_delete, name="budget_limit_delete"),
 ]

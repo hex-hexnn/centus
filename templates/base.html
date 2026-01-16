@@ -12,11 +12,43 @@
      <div class="collapse navbar-collapse" id="navbarNav">
     <ul class="navbar-nav me-auto mb-2 mb-lg-0">
         {% if user.is_authenticated %}
-            <li class="nav-item"><a class="nav-link" href="{% url 'transaction_list' %}">Pulpit</a></li>
-            <li class="nav-item"><a class="nav-link" href="{% url 'category_list' %}">Kategorie</a></li>
-            <li class="nav-item"><a class="nav-link" href="{% url 'analysis' %}">Analizy</a></li> 
-            <li class="nav-item"><a class="nav-link" href="{% url 'recommendations' %}">Rekomendacje</a></li>{% endif %}
-    </ul>
+            <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'transaction_list' %}active{% endif %}"
+                       href="{% url 'transaction_list' %}">
+                        Pulpit
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'category_list' %}active{% endif %}"
+                       href="{% url 'category_list' %}">
+                        Kategorie
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'analysis' %}active{% endif %}"
+                       href="{% url 'analysis' %}">
+                        Analizy
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'recommendations' %}active{% endif %}"
+                       href="{% url 'recommendations' %}">
+                        Rekomendacje
+                    </a>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'budget_limits' %}active{% endif %}"
+                       href="{% url 'budget_limits' %}">
+                        Limity
+                    </a>
+                </li>
+
+                {% endif %}
+            </ul>
 
     <ul class="navbar-nav">
         {% if user.is_authenticated %}

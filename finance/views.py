@@ -14,6 +14,9 @@ from datetime import date, datetime
 from finance.models import Subscription
 from finance.forms import SubscriptionForm
 from finance.recommendations import get_savings_recommendations
+from finance.models import BudgetLimit
+from finance.forms import BudgetLimitForm
+from django.contrib import messages
 
 
 @login_required
@@ -356,3 +359,53 @@ def recommendations_view(request):
     }
     return render(request, "finance/recommendations.html", context)
 
+@login_required
+def budget_limits_list(request):
+    limits = BudgetLimit.objects.filter(user=request.user).select_related("category").order_by("-month", "category__name")
+    return render(request, "finance/budget_limits_list.html", {"limits": limits})
+
+
+@login_required
+def budget_limit_create(request):
+    if request.method == "POST":
+        form = BudgetLimitForm(request.POST)
+        if form.is_valid():
+            obj = form.save(commit=False)
+            obj.user = request.user
+            try:
+                obj.save()
+                messages.success(request, "Limit zapisany.")
+                return redirect("budget_limits")
+            except Exception:
+                # najczęściej poleci unique_together (ten sam user+category+miesiąc)
+                messages.error(request, "Limit dla tej kategorii i miesiąca już istnieje. Edytuj istniejący.")
+    else:
+        form = BudgetLimitForm()
+
+    return render(request, "finance/budget_limit_form.html", {"form": form, "title": "Dodaj limit"})
+
+
+@login_required
+def budget_limit_update(request, pk):
+    obj = get_object_or_404(BudgetLimit, pk=pk, user=request.user)
+
+    if request.method == "POST":
+        form = BudgetLimitForm(request.POST, instance=obj)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Limit zaktualizowany.")
+            return redirect("budget_limits")
+    else:
+        form = BudgetLimitForm(instance=obj)
+
+    return render(request, "finance/budget_limit_form.html", {"form": form, "title": "Edytuj limit"})
+
+
+@login_required
+def budget_limit_delete(request, pk):
+    obj = get_object_or_404(BudgetLimit, pk=pk, user=request.user)
+    if request.method == "POST":
+        obj.delete()
+        messages.success(request, "Limit usunięty.")
+        return redirect("budget_limits")
+    return render(request, "finance/budget_limit_delete.html", {"obj": obj})
