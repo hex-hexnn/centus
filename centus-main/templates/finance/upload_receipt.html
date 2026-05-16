@@ -1,9 +1,79 @@
-<h1>Upload receipt</h1>
+{% extends 'base.html' %}
 
-<form method="POST" enctype="multipart/form-data">
-    {% csrf_token %}
+{% block title %}Wgraj Nowy Paragon{% endblock %}
 
-    {{ form.as_p }}
+{% block content %}
+<div class="row justify-content-center mt-4">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow-sm border-success">
+            <div class="card-header bg-success text-white py-3">
+                <h4 class="card-title mb-0 d-flex align-items-center">
+                    <span class="fs-4 me-2">📸</span> Wgraj Nowy Paragon
+                </h4>
+            </div>
+            
+            <div class="card-body p-4">
+                <div class="alert alert-success d-flex align-items-center mb-4" role="alert">
+                    <div class="me-3 fs-3">🤖</div>
+                    <div>
+                        <strong>Inteligentne skanowanie:</strong> Wgraj jasne i czytelne zdjęcie paragonu. Model multimodalny <strong>Gemini 2.5 Flash</strong> automatycznie przeanalizuje obraz, uzupełni opis, kwotę oraz datę zakupów.
+                    </div>
+                </div>
 
-    <button type="submit">Upload</button>
-</form>
+                <form method="POST" enctype="multipart/form-data" class="needs-validation">
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    {% for field in form %}
+                        <div class="mb-4">
+                            <label for="{{ field.id_for_label }}" class="form-label fw-bold text-secondary">
+                                {{ field.label }}
+                            </label>
+                            
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted">📁</span>
+                                <input type="file" 
+                                       name="{{ field.name }}" 
+                                       id="{{ field.id_for_label }}" 
+                                       class="form-control {% if field.errors %}is-invalid{% endif %}"
+                                       accept="image/*"
+                                       required>
+                            </div>
+
+                            {% if field.help_text %}
+                                <div class="form-text text-muted small mt-1">{{ field.help_text }}</div>
+                            {% endif %}
+
+                            {% if field.errors %}
+                                <div class="invalid-feedback d-block mt-1">
+                                    {% for error in field.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+
+                    <hr class="my-4">
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg fw-bold shadow-sm py-2">
+                            Wyślij do analizy AI ✨
+                        </button>
+                        <a href="{% url 'receipt_list' %}" class="btn btn-outline-secondary py-2">
+                            Anuluj i wróć do listy
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -437,11 +437,11 @@ def upload_receipt(request):
                     request,
                     f"Paragon odczytany pomyślnie! Kwota: {processed_receipt.suggested_amount} PLN"
                 )
-                # --- ZMIANA 1: Przekierowujemy na widok weryfikacji, podając ID nowo stworzonego paragonu ---
-                return redirect('receipt_list')
+                #return redirect('receipt_list')
             else:
                 messages.warning(request, "Zapisano paragon, ale AI miało problem z jego rozczytaniem.")
-                return redirect('transaction_list')
+                #return redirect('transaction_list')
+            return redirect('receipt_list')
 
     else:
         form = ReceiptForm()
@@ -450,21 +450,19 @@ def upload_receipt(request):
 
 @login_required
 def receipt_list(request):
-    # 1. Pobieramy paragony użytkownika
     receipts = Receipt.objects.filter(user=request.user).order_by('-uploaded_at')
-    # 2. Pobieramy kategorie wydatków do rozwijanej listy formularza
     categories = Category.objects.filter(type='EXPENSE')
 
-    # 3. Obsługa formularza, gdy użytkownik przypisuje produkt/paragon do kategorii
     if request.method == 'POST':
         category_id = request.POST.get('category')
         amount = request.POST.get('amount')
         description = request.POST.get('description')
         date_str = request.POST.get('date')
+        receipt_id = request.POST.get('receipt_id')
 
         if category_id and amount:
             category = get_object_or_404(Category, id=category_id)
-            # Tworzymy oficjalną transakcję w bazie danych
+
             Transaction.objects.create(
                 user=request.user,
                 category=category,
@@ -472,10 +470,12 @@ def receipt_list(request):
                 description=description or "Wydatek z paragonu",
                 date=date_str or date.today()
             )
+            if receipt_id:
+                Receipt.objects.filter(id=receipt_id, user=request.user).delete()
+
             messages.success(request, f"Pomyślnie dodano wydatek '{description}' do kategorii {category.name}!")
             return redirect('receipt_list')
 
-    # 4. Przetwarzamy tekst OCR na linijki, aby ładnie wyświetlić produkty w HTML
     processed_receipts = []
     for r in receipts:
         lines = [line.strip() for line in r.extracted_text.split('\n') if line.strip()] if r.extracted_text else []

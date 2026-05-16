@@ -11,7 +11,7 @@
 {% if receipts %}
     <div class="row">
         {% for receipt in receipts %}
-            <div class="col-100 mb-4">
+            <div class="col-12 mb-4">
                 <div class="card shadow-sm border-primary">
                     <div class="card-header bg-light d-flex justify-content-between align-items-center">
                         <span class="text-muted">Wgrano: {{ receipt.object.uploaded_at|date:"d M Y H:i" }}</span>
@@ -37,31 +37,38 @@
 
                             <div class="col-md-6">
                                 <h5 class="card-title text-success mb-3">Zaksięguj produkt jako wydatek:</h5>
-                                <form method="post" class="row g-3">
+                                <form method="post" class="row g-3" action="{% url 'receipt_list' %}">
                                     {% csrf_token %}
+
+                                    <input type="hidden" name="receipt_id" value="{{ receipt.object.id }}">
+
                                     <div class="col-md-7">
                                         <label class="form-label">Nazwa produktu / Opis</label>
-                                        <input type="text" name="description" class="form-control" value="{{ r.object.suggested_description|default_if_none:'' }}" placeholder="np. Chleb, Masło, Zakupy spożywcze" required>
+                                        <input type="text" name="description" class="form-control"
+                                               value="{{ receipt.object.suggested_description|default_if_none:'' }}"
+                                               placeholder="np. Chleb, Masło, Zakupy spożywcze" required>
                                     </div>
                                     <div class="col-md-5">
                                         <label class="form-label">Kwota (PLN)</label>
-                                        <input type="number" name="amount" step="0.01" class="form-control" value="{{ r.object.suggested_amount|default_if_none:'0.00' }}" required>
+                                        <input type="number" step="0.01" name="amount" class="form-control"
+                                               value="{% if receipt.object.suggested_amount %}{{ receipt.object.suggested_amount|stringformat:'.2f' }}{% else %}0.00{% endif %}" required>
                                     </div>
                                     <div class="col-md-7">
                                         <label class="form-label">Kategoria wydatku</label>
                                         <select name="category" class="form-select" required>
-                                            <option value="" disabled selected>-- Wybierz kategorię --</option>
+                                            <option value="" disabled {% if not receipt.object.suggested_category %}selected{% endif %}>-- Wybierz kategorię --</option>
                                             {% for cat in categories %}
-                                                <option value="{{ category.id }}"
-                                                     {% if r.object.suggested_category and r.object.suggested_category.id == category.id %}selected{% endif %}>
-                                                 {{ category.name }}
+                                                <option value="{{ cat.id }}"
+                                                         {% if receipt.object.suggested_category and receipt.object.suggested_category.id == cat.id %}selected{% endif %}>
+                                                    {{ cat.name }}
                                                 </option>
                                             {% endfor %}
                                         </select>
                                     </div>
                                     <div class="col-md-5">
                                         <label class="form-label">Data zakupu</label>
-                                        <input type="date" name="date" class="form-control" value="{{ r.object.suggested_date|date:'Y-m-d' }}">
+                                        <input type="date" name="date" class="form-control"
+                                               value="{{ receipt.object.suggested_date|date:'Y-m-d' }}" required>
                                     </div>
                                     <div class="col-12 text-end mt-4">
                                         <button type="submit" class="btn btn-primary">Dodaj do budżetu 💰</button>
