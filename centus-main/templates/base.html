@@ -54,6 +54,23 @@
                     </a>
                 </li>
 
+                <li class="nav-item">
+    <a class="nav-link {% if request.resolver_match.url_name == 'upload_receipt' %}active{% endif %}"
+       href="{% url 'upload_receipt' %}">
+        Dodaj Paragon
+    </a>
+</li>
+
+<li class="nav-item">
+    <a class="nav-link {% if request.resolver_match.url_name == 'receipt_list' %}active{% endif %}"
+       href="{% url 'receipt_list' %}">
+        Moje Paragony
+    </a>
+</li>
+
+
+
+
                 {% endif %}
             </ul>
 

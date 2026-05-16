@@ -1,10 +1,83 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
-</head>
-<body>
-$END$
-</body>
-</html>
+{% extends 'base.html' %}
+
+{% block title %}Zarządzaj Paragonami{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>📋 Paragony do skategoryzowania</h2>
+    <a href="{% url 'upload_receipt' %}" class="btn btn-success">+ Wgraj nowy paragon</a>
+</div>
+
+{% if receipts %}
+    <div class="row">
+        {% for receipt in receipts %}
+            <div class="col-100 mb-4">
+                <div class="card shadow-sm border-primary">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                        <span class="text-muted">Wgrano: {{ receipt.object.uploaded_at|date:"d M Y H:i" }}</span>
+                        <form action="{% url 'receipt_delete' receipt.object.pk %}" method="post" class="d-inline" onsubmit="return confirm('Czy na pewno chcesz usunąć ten paragon?');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-danger">Usuń paragon 🗑️</button>
+                        </form>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 border-end">
+                                <h5 class="card-title text-primary mb-3">Odczytany tekst z paragonu:</h5>
+                                <div class="bg-dark text-white p-3 rounded" style="max-height: 250px; overflow-y: auto; font-family: monospace;">
+                                    {% if receipt.lines %}
+                                        {% for line in receipt.lines %}
+                                            <div>{{ line }}</div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <span class="text-muted">Nie udało się odczytać żadnego tekstu ze zdjęcia.</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <h5 class="card-title text-success mb-3">Zaksięguj produkt jako wydatek:</h5>
+                                <form method="post" class="row g-3">
+                                    {% csrf_token %}
+                                    <div class="col-md-7">
+                                        <label class="form-label">Nazwa produktu / Opis</label>
+                                        <input type="text" name="description" class="form-control" placeholder="np. Chleb, Masło, Zakupy spożywcze" required>
+                                    </div>
+                                    <div class="col-md-5">
+                                        <label class="form-label">Kwota (PLN)</label>
+                                        <input type="number" name="amount" step="0.01" class="form-control" placeholder="0.00" required>
+                                    </div>
+                                    <div class="col-md-7">
+                                        <label class="form-label">Kategoria wydatku</label>
+                                        <select name="category" class="form-select" required>
+                                            <option value="" disabled selected>-- Wybierz kategorię --</option>
+                                            {% for cat in categories %}
+                                                <option value="{{ cat.id }}">{{ cat.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-5">
+                                        <label class="form-label">Data zakupu</label>
+                                        <input type="date" name="date" class="form-control" value="{{ datetime.date.today|date:'Y-m-d' }}">
+                                    </div>
+                                    <div class="col-12 text-end mt-4">
+                                        <button type="submit" class="btn btn-primary">Dodaj do budżetu 💰</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="alert alert-info text-center py-4">
+        Nie masz obecnie żadnych paragonów do przetworzenia. Kliknij przycisk powyżej, aby dodać pierwsze zdjęcie! 😊
+    </div>
+{% endif %}
+
+<div class="text-center mt-3">
+    <a href="{% url 'transaction_list' %}" class="btn btn-secondary">Wróć do Pulpitu</a>
+</div>
+{% endblock %}

@@ -19,4 +19,6 @@ urlpatterns = [
     path("limits/edit/<int:pk>/", views.budget_limit_update, name="budget_limit_update"),
     path("limits/delete/<int:pk>/", views.budget_limit_delete, name="budget_limit_delete"),
     path('upload-receipt/', views.upload_receipt, name='upload_receipt'),
+    path('receipts/', views.receipt_list, name='receipt_list'),
+    path('receipts/delete/<int:pk>/', views.receipt_delete, name='receipt_delete'),
 ]

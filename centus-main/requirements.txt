@@ -12,3 +12,6 @@ crispy-bootstrap5==2024.2
 # Do ukrywania kluczy (SECRET_KEY) w pliku .env zamiast w kodzie
 python-dotenv==1.0.1
 matplotlib
+#--- Pliki do działania OCR
+pytesseract
+Pillow

@@ -19,6 +19,11 @@ from finance.forms import BudgetLimitForm
 from django.contrib import messages
 from .forms import ReceiptForm
 from .models import Receipt
+import pytesseract
+from PIL import Image
+
+#--- tutaj wpisujecie lokacje gdzie macie pobrany tesseract
+pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 
 @login_required
@@ -412,20 +417,90 @@ def budget_limit_delete(request, pk):
         return redirect("budget_limits")
     return render(request, "finance/budget_limit_delete.html", {"obj": obj})
 
+
 @login_required
 def upload_receipt(request):
-
     if request.method == 'POST':
         form = ReceiptForm(request.POST, request.FILES)
 
         if form.is_valid():
             receipt = form.save(commit=False)
             receipt.user = request.user
-            receipt.save()
+            receipt.save()  # Zapisujemy obiekt, żeby zdjęcie fizycznie trafiło na dysk
 
-            return redirect('/')
+            # ---------------------------------------------------------
+            # TUTAJ WYKORZYSTUJEMY SKONFIGUROWANEGO TESSERACTA DO OCR:
+            # ---------------------------------------------------------
+            try:
+                # Otwieramy zapisany plik graficzny przy użyciu biblioteki Pillow (Image)
+                img = Image.open(receipt.image.path)
+
+                # Przetwarzamy obraz na tekst (używając polskiego pakietu językowego 'pol')
+                extracted_text = pytesseract.image_to_string(img, lang='pol')
+
+                # Zapisujemy odczytany tekst do bazy danych w polu 'extracted_text'
+                receipt.extracted_text = extracted_text
+                receipt.save()
+
+                messages.success(request, "Paragon został pomyślnie przetworzony przez OCR!")
+            except Exception as e:
+                messages.error(request, f"Błąd podczas odczytywania tekstu ze zdjęcia: {e}")
+            # ---------------------------------------------------------
+
+            return redirect('/')  # Przekierowanie na stronę główną pulpitu
 
     else:
         form = ReceiptForm()
 
     return render(request, 'finance/upload_receipt.html', {'form': form})
+
+
+@login_required
+def receipt_list(request):
+    # 1. Pobieramy paragony użytkownika
+    receipts = Receipt.objects.filter(user=request.user).order_by('-uploaded_at')
+    # 2. Pobieramy kategorie wydatków do rozwijanej listy formularza
+    categories = Category.objects.filter(type='EXPENSE')
+
+    # 3. Obsługa formularza, gdy użytkownik przypisuje produkt/paragon do kategorii
+    if request.method == 'POST':
+        category_id = request.POST.get('category')
+        amount = request.POST.get('amount')
+        description = request.POST.get('description')
+        date_str = request.POST.get('date')
+
+        if category_id and amount:
+            category = get_object_or_404(Category, id=category_id)
+            # Tworzymy oficjalną transakcję w bazie danych
+            Transaction.objects.create(
+                user=request.user,
+                category=category,
+                amount=amount,
+                description=description or "Wydatek z paragonu",
+                date=date_str or date.today()
+            )
+            messages.success(request, f"Pomyślnie dodano wydatek '{description}' do kategorii {category.name}!")
+            return redirect('receipt_list')
+
+    # 4. Przetwarzamy tekst OCR na linijki, aby ładnie wyświetlić produkty w HTML
+    processed_receipts = []
+    for r in receipts:
+        lines = [line.strip() for line in r.extracted_text.split('\n') if line.strip()] if r.extracted_text else []
+        processed_receipts.append({
+            'object': r,
+            'lines': lines
+        })
+
+    return render(request, 'finance/receipt_list.html', {
+        'receipts': processed_receipts,
+        'categories': categories,
+    })
+
+
+@login_required
+def receipt_delete(request, pk):
+    receipt = get_object_or_404(Receipt, pk=pk, user=request.user)
+    if request.method == 'POST':
+        receipt.delete()
+        messages.success(request, "Paragon został usunięty z listy.")
+    return redirect('receipt_list')
