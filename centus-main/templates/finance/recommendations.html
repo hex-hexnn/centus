@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Rekomendacje{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h2 class="mb-0">Rekomendacje oszczędnościowe</h2>
+    <small class="text-muted">
+      {% if selected_month %}
+        Miesiąc: {{ selected_month|date:"Y-m" }}
+      {% else %}
+        Miesiąc: bieżący
+      {% endif %}
+    </small>
+  </div>
+
+  <!-- Prosty wybór miesiąca (opcjonalnie) -->
+  <form method="get" class="d-flex gap-2">
+    <input
+      type="month"
+      name="month"
+      class="form-control"
+      value="{% if selected_month %}{{ selected_month|date:'Y-m' }}{% endif %}"
+    />
+    <button class="btn btn-outline-primary" type="submit">Pokaż</button>
+  </form>
+</div>
+
+{% if recommendations %}
+  {% for r in recommendations %}
+    <div class="alert
+      {% if r.level == 'success' %}alert-success
+      {% elif r.level == 'warning' %}alert-warning
+      {% else %}alert-info
+      {% endif %}
+    " role="alert">
+      <div class="fw-bold">{{ r.title }}</div>
+      <div>{{ r.message }}</div>
+    </div>
+  {% endfor %}
+{% else %}
+  <div class="alert alert-info" role="alert">
+    Brak rekomendacji.
+  </div>
+{% endif %}
+
+{% endblock %}
