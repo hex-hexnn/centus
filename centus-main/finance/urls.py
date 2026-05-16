@@ -21,4 +21,6 @@ urlpatterns = [
     path('upload-receipt/', views.upload_receipt, name='upload_receipt'),
     path('receipts/', views.receipt_list, name='receipt_list'),
     path('receipts/delete/<int:pk>/', views.receipt_delete, name='receipt_delete'),
+    path('receipts/', views.receipt_list, name='receipt_list'),
+    path('receipt/review/<int:receipt_id>/', views.review_receipt, name='review_receipt'),
 ]

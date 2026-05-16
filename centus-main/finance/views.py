@@ -21,6 +21,7 @@ from .forms import ReceiptForm
 from .models import Receipt
 import pytesseract
 from PIL import Image
+from .classification_service import process_and_categorize_receipt
 
 #--- tutaj wpisujecie lokacje gdzie macie pobrany tesseract
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
@@ -426,34 +427,26 @@ def upload_receipt(request):
         if form.is_valid():
             receipt = form.save(commit=False)
             receipt.user = request.user
-            receipt.save()  # Zapisujemy obiekt, żeby zdjęcie fizycznie trafiło na dysk
+            receipt.save()
 
-            # ---------------------------------------------------------
-            # TUTAJ WYKORZYSTUJEMY SKONFIGUROWANEGO TESSERACTA DO OCR:
-            # ---------------------------------------------------------
-            try:
-                # Otwieramy zapisany plik graficzny przy użyciu biblioteki Pillow (Image)
-                img = Image.open(receipt.image.path)
+            # Serwis zwraca zaktualizowany obiekt RECEIPT z podpowiedziami AI
+            processed_receipt = process_and_categorize_receipt(receipt)
 
-                # Przetwarzamy obraz na tekst (używając polskiego pakietu językowego 'pol')
-                extracted_text = pytesseract.image_to_string(img, lang='pol')
-
-                # Zapisujemy odczytany tekst do bazy danych w polu 'extracted_text'
-                receipt.extracted_text = extracted_text
-                receipt.save()
-
-                messages.success(request, "Paragon został pomyślnie przetworzony przez OCR!")
-            except Exception as e:
-                messages.error(request, f"Błąd podczas odczytywania tekstu ze zdjęcia: {e}")
-            # ---------------------------------------------------------
-
-            return redirect('/')  # Przekierowanie na stronę główną pulpitu
+            if processed_receipt:
+                messages.success(
+                    request,
+                    f"Paragon odczytany pomyślnie! Kwota: {processed_receipt.suggested_amount} PLN"
+                )
+                # --- ZMIANA 1: Przekierowujemy na widok weryfikacji, podając ID nowo stworzonego paragonu ---
+                return redirect('receipt_list')
+            else:
+                messages.warning(request, "Zapisano paragon, ale AI miało problem z jego rozczytaniem.")
+                return redirect('transaction_list')
 
     else:
         form = ReceiptForm()
 
     return render(request, 'finance/upload_receipt.html', {'form': form})
-
 
 @login_required
 def receipt_list(request):
@@ -504,3 +497,29 @@ def receipt_delete(request, pk):
         receipt.delete()
         messages.success(request, "Paragon został usunięty z listy.")
     return redirect('receipt_list')
+
+def review_receipt(request, receipt_id):
+    receipt = get_object_or_404(Receipt, id=receipt_id, user=request.user)
+
+    if request.method == 'POST':
+        form = TransactionForm(request.POST)
+        if form.is_valid():
+            transaction = form.save(commit=False)
+            transaction.user = request.user
+            transaction.save()
+            # Po poprawnym zaksięgowaniu można np. usunąć zdjęcie paragonu z bazy
+            receipt.delete()
+            return redirect('transaction_list')
+    else:
+        # MAGIA: Formularz automatycznie uzupełni pola na ekranie!
+        form = TransactionForm(initial={
+            'description': receipt.suggested_description,
+            'amount': receipt.suggested_amount,
+            'date': receipt.suggested_date,
+            'category': receipt.suggested_category
+        })
+
+    return render(request, 'finance/receipt_review.html', {
+        'form': form,
+        'receipt': receipt
+    })
